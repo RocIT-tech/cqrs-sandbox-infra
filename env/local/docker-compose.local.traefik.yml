@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+    nginx:
+        networks:
+            - 'default'
+            - 'traefik'
+        labels:
+            traefik.backend: 'tech.roc-it.cqrs'
+            traefik.enable: 'true'
+            traefik.port: '80'
+            traefik.frontend.rule: 'Host:local.cqrs.roc-it.tech'
+
+    traefik:
+        labels:
+            traefik.backend: 'tech.roc-it.traefik'
+            traefik.enable: 'true'
+            traefik.port: '8080'
+            traefik.frontend.rule: 'Host:local.traefik.roc-it.tech'
+
+    whoami:
+        labels:
+            traefik.backend: 'whoami'
+            traefik.port: '80'
+            traefik.enable: 'true'
+            traefik.frontend.priority: 1
+            traefik.frontend.rule: 'Host:local.whoami.roc-it.tech'

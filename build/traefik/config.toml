@@ -1,0 +1,61 @@
+#debug = true
+#logLevel = "DEBUG"
+defaultEntryPoints = ["http", "https"]
+
+################################################################
+# File configuration backend
+################################################################
+[file]
+  directory = "/etc/traefik/configs/"
+  watch = true
+
+################################################################
+# Web configuration backend
+################################################################
+[web]
+address = ":8080"
+  [web.auth.basic]
+  users = ["admin:$apr1$ujY.SEh5$pA9iKItKRwneinEuNBmg0."]
+
+################################################################
+# Entry-points configuration
+################################################################
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+      entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+  compress = true
+    [entryPoints.https.tls]
+
+################################################################
+# Docker configuration backend
+################################################################
+[docker]
+domain = "roc-it.tech"
+#swarmmode = true
+watch = true
+exposedbydefault = false
+network = "traefik"
+
+################################################################
+# TLS
+################################################################
+[acme]
+email = "adrien@roc-it.tech"
+storage = "acme.json"
+onHostRule = true
+entryPoint = "https"
+#caServer = "https://acme-staging-v02.api.letsencrypt.org/directory"
+#acmeLogging = true
+
+[[acme.domains]]
+  main = "*.roc-it.tech"
+  sans = ["roc-it.tech"]
+
+[acme.httpChallenge]
+  entryPoint = "http"
+
+[acme.tlsChallenge]

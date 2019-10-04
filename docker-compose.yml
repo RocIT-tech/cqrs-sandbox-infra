@@ -1,0 +1,34 @@
+version: '3.7'
+services:
+    postgres:
+        image: 'postgres:11.3'
+        volumes:
+            -
+                type: 'volume'
+                source: 'cqrs_postgres'
+                target: '/var/lib/postgresql/data'
+        tty: true
+        env_file:
+            - './postgres.env'
+
+    php:
+        user: 'app'
+        working_dir: '/var/www/html'
+        env_file:
+            - './php.env'
+        depends_on:
+            - 'postgres'
+        tty: true
+        image: 'rocit/php:cqrs-php'
+
+    nginx:
+        image: 'rocit/nginx:1.17-symfony4'
+        working_dir: '/var/www/html'
+        env_file:
+            - './nginx.env'
+        depends_on:
+            - 'php'
+        tty: true
+
+volumes:
+    cqrs_postgres:

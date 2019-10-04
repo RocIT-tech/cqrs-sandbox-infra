@@ -1,0 +1,57 @@
+version: '3.7'
+services:
+    postgres:
+        ports:
+            -
+                target: 5432
+                published: 5432
+        container_name: 'cqrs_postgres'
+
+    php:
+        build:
+            context: './build/php'
+            target: 'php'
+            args:
+                ENABLE_BLACKFIRE: 'true'
+                ENABLE_XDEBUG: 'true'
+        volumes:
+            -
+                type: 'bind'
+                source: '../cqrs-sandbox'
+                target: '/var/www/html'
+                consistency: 'delegated'
+        container_name: 'cqrs_php'
+
+    composer:
+        image: 'rocit/php:cqrs-composer'
+        build:
+            context: './build/php'
+            target: 'composer'
+            args:
+                ENABLE_BLACKFIRE: 'false'
+                ENABLE_XDEBUG: 'false'
+        user: 'app'
+        working_dir: '/var/www/html'
+        env_file:
+            - './php.env'
+        depends_on:
+            - 'postgres'
+        tty: true
+        volumes:
+            -
+                type: 'bind'
+                source: '../cqrs-sandbox'
+                target: '/var/www/html'
+                consistency: 'delegated'
+            - '~/.ssh:/var/www/.ssh:ro'                   # For composer
+            - '~/.composer:/home/app/.composer:delegated' # For composer
+        container_name: 'cqrs_composer'
+
+    nginx:
+        volumes:
+            -
+                type: 'bind'
+                source: '../cqrs-sandbox'
+                target: '/var/www/html'
+                consistency: 'delegated'
+        container_name: 'cqrs_nginx'
