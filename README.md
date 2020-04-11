@@ -159,6 +159,11 @@ This file is to ease the use of containers without thinking about it when develo
 $ source ./functions.sh
 ```
 
+### Setting up the database
+```bash
+$ dev do:mi:mi -n; dev h:f:l -n
+```
+
 ### Build assets
 #### React app
 ```bash
