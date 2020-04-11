@@ -48,7 +48,7 @@ services:
         container_name: 'symfony_tools'
 
     openapi_tools:
-        image: 'pichet/python:openapi-tools'
+        image: 'rocit/python:openapi-tools'
         build:
             context: './build/openapi_tools'
         env_file:
