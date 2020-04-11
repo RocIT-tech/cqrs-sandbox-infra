@@ -1,0 +1,8 @@
+:443
+
+tls /ssl/local-cert.pem /ssl/local-key.pem
+
+root * /var/www/html/public
+try_files {path} /index.php?{query}&p={path}
+php_fastcgi php:9000
+file_server

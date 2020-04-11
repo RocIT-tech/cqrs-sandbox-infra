@@ -5,7 +5,7 @@ services:
         volumes:
             -
                 type: 'volume'
-                source: 'cqrs_postgres'
+                source: 'symfony_postgres'
                 target: '/var/lib/postgresql/data'
         tty: true
         env_file:
@@ -19,7 +19,7 @@ services:
         depends_on:
             - 'postgres'
         tty: true
-        image: 'rocit/php:cqrs-php'
+        image: 'rocit/php:symfony-php'
 
     nginx:
         image: 'rocit/nginx:1.17-symfony4'
@@ -30,5 +30,16 @@ services:
             - 'php'
         tty: true
 
+    vulcain:
+        image: 'dunglas/vulcain'
+        env_file:
+            - './vulcain.env'
+        tty: true
+
+    blackfire:
+        image: 'blackfire/blackfire'
+        env_file:
+            - './blackfire.env'
+
 volumes:
-    cqrs_postgres:
+    symfony_postgres:

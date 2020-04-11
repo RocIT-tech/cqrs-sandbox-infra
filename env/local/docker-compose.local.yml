@@ -5,7 +5,7 @@ services:
             -
                 target: 5432
                 published: 5432
-        container_name: 'cqrs_postgres'
+        container_name: 'symfony_postgres'
 
     php:
         build:
@@ -13,20 +13,20 @@ services:
             target: 'php'
             args:
                 ENABLE_BLACKFIRE: 'true'
-                ENABLE_XDEBUG: 'true'
+                ENABLE_XDEBUG: 'false'
         volumes:
             -
                 type: 'bind'
-                source: '../cqrs-sandbox'
+                source: "${SYMFONY_PROJECT_PATH:?}"
                 target: '/var/www/html'
                 consistency: 'delegated'
-        container_name: 'cqrs_php'
+        container_name: 'symfony_php'
 
-    composer:
-        image: 'rocit/php:cqrs-composer'
+    tools:
+        image: 'rocit/php:symfony-tools'
         build:
             context: './build/php'
-            target: 'composer'
+            target: 'tools'
             args:
                 ENABLE_BLACKFIRE: 'false'
                 ENABLE_XDEBUG: 'false'
@@ -40,18 +40,174 @@ services:
         volumes:
             -
                 type: 'bind'
-                source: '../cqrs-sandbox'
+                source: "${SYMFONY_PROJECT_PATH:?}"
                 target: '/var/www/html'
                 consistency: 'delegated'
             - '~/.ssh:/var/www/.ssh:ro'                   # For composer
             - '~/.composer:/home/app/.composer:delegated' # For composer
-        container_name: 'cqrs_composer'
+        container_name: 'symfony_tools'
+
+    openapi_tools:
+        image: 'pichet/python:openapi-tools'
+        build:
+            context: './build/openapi_tools'
+        env_file:
+            - './openapi_tools.env'
+        tty: true
+        working_dir: '/var/openapi'
+        volumes:
+            -
+                type: 'bind'
+                source: "${SYMFONY_PROJECT_PATH:?}/doc/openapi"
+                target: '/var/openapi'
+                consistency: 'delegated'
+        container_name: 'symfony_openapi_tools'
 
     nginx:
         volumes:
             -
                 type: 'bind'
-                source: '../cqrs-sandbox'
+                source: "${SYMFONY_PROJECT_PATH:?}"
                 target: '/var/www/html'
                 consistency: 'delegated'
-        container_name: 'cqrs_nginx'
+        container_name: 'symfony_nginx'
+
+    nginx_h2:
+        networks:
+            default: {}
+            vulcain:
+                aliases:
+                    - 'local.symfony'
+        image: 'rocit/nginx:1.17-symfony4'
+        working_dir: '/var/www/html'
+        env_file:
+            - './nginx.env'
+            - './nginx_h2.env'
+        volumes:
+            -
+                type: 'bind'
+                source: "${SYMFONY_PROJECT_PATH:?}"
+                target: '/var/www/html'
+                consistency: 'delegated'
+            -
+                type: 'bind'
+                source: './env/local/certs'
+                target: '/ssl'
+                read_only: true
+        container_name: 'symfony_nginx_h2'
+
+    vulcain:
+        networks:
+            default: {}
+            vulcain: {}
+        expose:
+            - '8080'
+        depends_on:
+            - 'nginx_h2'
+        ports:
+            -
+                target: 8080
+                published: 8080
+                protocol: 'tcp'
+                mode: 'host'
+            -
+                target: 8080
+                published: 8080
+                protocol: 'udp'
+                mode: 'host'
+        volumes:
+            -
+                type: 'bind'
+                source: './env/local/certs'
+                target: '/tls'
+                read_only: true
+            -
+                type: 'bind'
+                source: "${CA_ROOT_PATH:?}/rootCA.pem"
+                target: '/etc/ssl/certs/ca-certificates.crt'
+                read_only: true
+        container_name: 'symfony_vulcain'
+
+    nginx_h3:
+        image: 'rocit/nginx:quic-1.16-symfony4'
+        ports:
+            -
+                target: 443
+                published: 9090
+                protocol: 'tcp'
+                mode: 'host'
+            -
+                target: 443
+                published: 9090
+                protocol: 'udp'
+                mode: 'host'
+        working_dir: '/var/www/html'
+        env_file:
+            - './nginx.env'
+            - './nginx_h2.env'
+            - './nginx_h3.env'
+        volumes:
+            -
+                type: 'bind'
+                source: "${SYMFONY_PROJECT_PATH:?}"
+                target: '/var/www/html'
+                consistency: 'delegated'
+            -
+                type: 'bind'
+                source: './env/local/certs'
+                target: '/ssl'
+                read_only: true
+        container_name: 'symfony_nginx_h3'
+
+    caddy:
+        image: 'caddy/caddy:latest'
+        ports:
+            -
+                target: 443
+                published: 9191
+                protocol: 'tcp'
+                mode: 'host'
+        volumes:
+            -
+                type: 'bind'
+                source: "${SYMFONY_PROJECT_PATH:?}"
+                target: '/var/www/html'
+                consistency: 'delegated'
+            -
+                type: 'bind'
+                source: './env/local/certs'
+                target: '/ssl'
+                read_only: true
+            -
+                type: 'bind'
+                source: './build/caddy/Caddyfile'
+                target: '/etc/caddy/Caddyfile'
+                read_only: true
+        container_name: 'symfony_caddy'
+
+    blackfire:
+        ports:
+            -
+                target: 8707
+                published: 8707
+                protocol: 'tcp'
+                mode: 'host'
+        container_name: 'symfony_blackfire'
+
+    node:
+        image: 'node:12-stretch'
+        user: 'node'
+        working_dir: '/var/www/html'
+        volumes:
+            -
+                type: 'bind'
+                source: "${SYMFONY_PROJECT_PATH:?}"
+                target: '/var/www/html'
+                consistency: 'delegated'
+            - '~/.cache/yarn:/home/node/.cache/yarn:delegated'
+        container_name: 'symfony_node'
+        tty: true
+
+networks:
+    vulcain:
+        name: 'vulcain'

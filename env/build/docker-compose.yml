@@ -1,0 +1,31 @@
+x-args: &args
+    ENABLE_BLACKFIRE: 'false'
+    ENABLE_XDEBUG: 'false'
+    SSH_PRIVATE_KEY: '${SSH_PRIVATE_KEY:?}'
+    CLONE_REPOSITORY: '${SSH_GIT_REPOSITORY:?}'
+    CLONE_BRANCH: '${CLONE_BRANCH:?}'
+    SERVER_ENV: '${SERVER_ENV:?}'
+    SYMFONY_ENV: '${SYMFONY_ENV:?}'
+    YARN_COMMAND: '${YARN_COMMAND:?}'
+
+version: '3.7'
+services:
+    php:
+        image: '${REGISTRY_BASE:?}/php${SUB_REGISTRY}:${VERSION_TAG:?}'
+        build:
+            context: './app'
+            target: 'php'
+            args:
+                *args
+
+    nginx:
+        image: '${REGISTRY_BASE:?}/nginx${SUB_REGISTRY}:${VERSION_TAG:?}'
+        build:
+            context: './app'
+            target: 'nginx'
+            cache_from:
+                - '${REGISTRY_BASE:?}/php${SUB_REGISTRY}:${VERSION_TAG:?}'
+            args:
+                *args
+        depends_on:
+            - 'php'

@@ -1,0 +1,52 @@
+entryPoints:
+    web:
+        address: ':80'
+    web-secure:
+        address: ':443'
+
+tls:
+    stores:
+        default:
+            defaultCertificate:
+                certFile: '/certs/local-cert.pem'
+                keyFile: '/certs/local-key.pem'
+
+http:
+    middlewares:
+        https-redirect:
+            redirectScheme:
+                scheme: 'https'
+    routers:
+        https-redirect:
+            entryPoints:
+                - 'web'
+            rule: 'HostRegexp(`{any:.*}`)'
+            middlewares:
+                - 'https-redirect'
+            service: 'dummy'
+    services:
+        dummy:
+            loadBalancer: {}
+
+log:
+    level: 'WARNING'
+
+#accessLog: {}
+
+#metrics: {}
+
+#tracing: {}
+
+providers:
+    docker:
+        watch: true
+        exposedByDefault: false
+        network: 'traefik'
+    file:
+        filename: '/etc/traefik/traefik.yaml'
+        watch: true
+
+api:
+#    insecure: true
+    dashboard: true
+#    debug: true

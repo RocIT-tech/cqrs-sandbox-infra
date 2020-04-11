@@ -5,7 +5,7 @@ case "${CURRENT_BASH}" in
   -zsh|zsh)
     CURRENT_DIR=$(cd "$(dirname "${0}")" && pwd)
     ;;
-  bash)
+  -bash|bash)
     CURRENT_DIR=$(cd "$(dirname ${BASH_SOURCE[0]})" && pwd)
     ;;
   *)
@@ -18,21 +18,15 @@ esac
 
 unalias php 2>/dev/null >/dev/null || true
 php() {
-  docker exec -it cqrs_php sh -c "php $*"
+  docker exec -it symfony_php sh -c "php $*"
 }
 export -f php
 
 unalias composer 2>/dev/null >/dev/null || true
 composer() {
-  docker exec -it cqrs_composer sh -c "COMPOSER_MEMORY_LIMIT=-1 composer $*"
+  docker exec -it symfony_tools sh -c "COMPOSER_MEMORY_LIMIT=-1 composer $*"
 }
 export -f composer
-
-unalias pomm 2>/dev/null >/dev/null || true
-pomm() {
-  docker exec -it cqrs_php sh -c "./vendor/bin/pomm.php $*"
-}
-export -f pomm
 
 unalias console 2>/dev/null >/dev/null || true
 console() {
@@ -42,13 +36,27 @@ export -f console
 
 unalias phpunit 2>/dev/null >/dev/null || true
 phpunit() {
-  php vendor/bin/phpunit "$@"
+  docker exec -it symfony_tools sh -c "php ./vendor/bin/phpunit $*"
 }
 export -f phpunit
 
+unalias openapi 2>/dev/null >/dev/null || true
+openapi() {
+  docker exec -it symfony_openapi_tools sh -c "openapi-cli-tool $*"
+}
+export -f openapi
+
+unalias openapi-build 2>/dev/null >/dev/null || true
+openapi-build() {
+  # trick because https://github.com/docker/compose/issues/2854 is not resolved (see end of thread)
+  eval $(cat "${CURRENT_DIR:?}/.env" | grep -v 'CA_ROOT_PATH' | perl -pe 's#^#export #')
+  openapi bundle -t json ./reference/Symfony-Sandbox.v1.yaml > "${CURRENT_DIR:?}/${SYMFONY_PROJECT_PATH:?}/doc/openapi/openapi.json"
+}
+export -f openapi-build
+
 unalias sf-check 2>/dev/null >/dev/null || true
 sf-check() {
-  php bin/symfony_requirements
+  php vendor/bin/requirements-checker
 }
 export -f sf-check
 
@@ -64,33 +72,27 @@ prod() {
 }
 export -f prod
 
+unalias test 2>/dev/null >/dev/null || true
+test() {
+  console --env=test "$@"
+}
+export -f test
+
 unalias pgsql 2>/dev/null >/dev/null || true
 pgsql() {
   source "${CURRENT_DIR}/postgres.env"
-  docker exec -ti cqrs_postgres sh -c "psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} $*"
+  docker exec -ti symfony_postgres sh -c "psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} $*"
 }
 export -f pgsql
 
-unalias pgsql-init 2>/dev/null >/dev/null || true
-pgsql-init() {
-  echo -e "\033[0;31mDATABASE SETUP - IN PROGRESS...\033[0m"
-  docker cp "${CURRENT_DIR}/build/postgres/init.sql" "cqrs_postgres:/tmp/init.sql"
-  docker cp "${CURRENT_DIR}/build/postgres/fixtures.sql" "cqrs_postgres:/tmp/fixtures.sql"
-
-  source "${CURRENT_DIR}/postgres.env"
-  docker exec -ti cqrs_postgres sh -c "psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} < /tmp/init.sql"
-  docker exec -ti cqrs_postgres sh -c "psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} < /tmp/fixtures.sql"
-  echo -e "\033[0;31mDATABASE SETUP - DONE !\033[0m\n"
+unalias yarn-react 2>/dev/null >/dev/null || true
+yarn-react() {
+  docker exec -ti symfony_node sh -c "cd ./webpack/react && yarn $*"
 }
-export -f pgsql-init
+export -f yarn-react
 
-unalias pgsql-reset 2>/dev/null >/dev/null || true
-pgsql-reset() {
-  echo -e "\033[0;31mDATABASE RESET - IN PROGRESS...\033[0m"
-  docker cp "${CURRENT_DIR}/build/postgres/reset.sql" "cqrs_postgres:/tmp/reset.sql"
-
-  source "${CURRENT_DIR}/postgres.env"
-  docker exec -ti cqrs_postgres sh -c "psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} < /tmp/reset.sql"
-  echo -e "\033[0;31mDATABASE RESET - DONE !\033[0m\n"
+unalias yarn-vue 2>/dev/null >/dev/null || true
+yarn-vue() {
+  docker exec -ti symfony_node sh -c "cd ./webpack/vue && yarn $*"
 }
-export -f pgsql-reset
+export -f yarn-vue

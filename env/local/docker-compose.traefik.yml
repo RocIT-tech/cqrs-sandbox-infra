@@ -1,7 +1,7 @@
 version: '3.7'
 services:
     traefik:
-        image: 'traefik:1.7'
+        image: 'traefik:2.1'
         container_name: 'traefik'
         networks:
             - 'default'
@@ -13,16 +13,14 @@ services:
                 target: '/var/run/docker.sock'
             -
                 type: 'bind'
-                source: './build/traefik/tls/acme.json'
-                target: '/acme.json'
+                source: './build/traefik/config_local.yaml'
+                target: '/etc/traefik/traefik.yaml'
+                read_only: true
             -
                 type: 'bind'
-                source: './build/traefik/config.toml'
-                target: '/etc/traefik/traefik.toml'
-            -
-                type: 'bind'
-                source: './build/traefik/configs'
-                target: '/etc/traefik/configs'
+                source: './env/local/certs'
+                target: '/certs'
+                read_only: true
         ports:
             -
                 target: 80
@@ -34,7 +32,6 @@ services:
                 mode: 'host'
         env_file:
             - './traefik.env'
-        command: '--debug --logLevel="DEBUG"'
 
     whoami:
         image: 'containous/whoami'

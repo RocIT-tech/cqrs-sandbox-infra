@@ -1,0 +1,54 @@
+version: '3.7'
+
+x-deploy: &deploy
+    mode: 'global'
+    placement:
+        constraints:
+            - 'node.role == manager'
+    update_config:
+        parallelism: 1
+        delay: '5s'
+        order: 'start-first'
+    rollback_config:
+        parallelism: 1
+        delay: '5s'
+        order: 'start-first'
+    restart_policy:
+        condition: 'on-failure'
+        delay: '5s'
+        window: '10s'
+        max_attempts: 5
+
+services:
+    postgres:
+        deploy:
+            <<: *deploy
+            update_config:
+                parallelism: 1
+                delay: '5s'
+                order: 'stop-first'
+            rollback_config:
+                parallelism: 1
+                delay: '5s'
+                order: 'stop-first'
+            restart_policy:
+                condition: 'on-failure'
+                delay: '5s'
+                window: '10s'
+                max_attempts: 5
+
+    php:
+        image: '${REGISTRY_BASE:?}/php:latest'
+        deploy:
+            <<: *deploy
+            mode: 'replicated'
+            replicas: 3
+            endpoint_mode: 'vip'
+
+    nginx:
+        image: '${REGISTRY_BASE:?}/nginx:latest'
+        deploy:
+            <<: *deploy
+            mode: 'replicated'
+            replicas: 3
+            endpoint_mode: 'vip'

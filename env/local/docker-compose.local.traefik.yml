@@ -5,22 +5,28 @@ services:
             - 'default'
             - 'traefik'
         labels:
-            traefik.backend: 'tech.roc-it.cqrs'
             traefik.enable: 'true'
-            traefik.port: '80'
-            traefik.frontend.rule: 'Host:local.cqrs.roc-it.tech'
+            traefik.http.services.symfony.loadbalancer.server.port: '80'
+            traefik.http.routers.symfony.rule: 'Host(`local.symfony`)'
+            traefik.http.routers.symfony.entrypoints: 'web-secure'
+            traefik.http.routers.symfony.tls: 'true'
 
     traefik:
         labels:
-            traefik.backend: 'tech.roc-it.traefik'
             traefik.enable: 'true'
-            traefik.port: '8080'
-            traefik.frontend.rule: 'Host:local.traefik.roc-it.tech'
+            traefik.http.services.traefik.loadbalancer.server.port: '8080'
+            traefik.http.routers.traefik.rule: 'Host(`local.traefik`)'
+            traefik.http.routers.traefik.service: 'api@internal'
+            traefik.http.routers.traefik.entrypoints: 'web-secure'
+            traefik.http.routers.traefik.tls: 'true'
 
     whoami:
+        networks:
+            - 'default'
+            - 'traefik'
         labels:
-            traefik.backend: 'whoami'
-            traefik.port: '80'
             traefik.enable: 'true'
-            traefik.frontend.priority: 1
-            traefik.frontend.rule: 'Host:local.whoami.roc-it.tech'
+            traefik.http.services.whoami.loadbalancer.server.port: '80'
+            traefik.http.routers.whoami.rule: 'Host(`local.whoami`)'
+            traefik.http.routers.whoami.entrypoints: 'web-secure'
+            traefik.http.routers.whoami.tls: 'true'
